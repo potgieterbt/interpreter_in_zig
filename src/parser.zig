@@ -1,5 +1,6 @@
 const std = @import("std");
-const token = @import("token.zig");
-const lexer = @import("lexer.zig");
+const Token = @import("token.zig").Token;
+const Type = @import("token.zig").Type;
+const Lexer = @import("lexer.zig").Lexer;
 
 const parser = struct {};
