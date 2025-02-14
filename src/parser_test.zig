@@ -77,7 +77,7 @@ pub fn TestReturnStatements() !u8 {
     const l = lexer.Lexer.init(input);
     var p = parser.parser.init(alloc, l);
 
-    const program = try p.ParseProgra();
+    const program = try p.ParseProgram();
 
     try checkParserErrors(p);
 
