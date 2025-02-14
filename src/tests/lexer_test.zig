@@ -4,8 +4,8 @@ const mem = std.mem;
 const testing = std.testing;
 const print = std.debug.print;
 
-const token = @import("token.zig");
-const Lexer = @import("lexer.zig").Lexer;
+const token = @import("../token.zig");
+const Lexer = @import("../lexer.zig").Lexer;
 
 pub fn TestNextToken() !u8 {
     const input = "=+(){},;";

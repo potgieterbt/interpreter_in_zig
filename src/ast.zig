@@ -9,11 +9,15 @@ const Statements = enum {
 
 pub const Program = struct {
     const Self = @This();
+    alloc: std.mem.Allocator,
     Statements: std.ArrayList(Statement),
+    stringBuf: std.ArrayList(std.ArrayList(u8)),
 
     pub fn init(alloc: std.mem.Allocator) Program {
         const p = Program{
+            .alloc = alloc,
             .Statements = std.ArrayList(Statement).init(alloc),
+            .stringBuf = std.ArrayList(std.ArrayList(u8)).init(alloc),
         };
         return p;
     }
@@ -24,6 +28,18 @@ pub const Program = struct {
         } else {
             return "";
         }
+    }
+
+    pub fn String(self: *Self) ![]const u8 {
+        const msg = std.ArrayList(u8).init(self.alloc);
+
+        try self.stringBuf.append(msg);
+
+        for (self.Statements.items, 0..) |stmt, i| {
+            _ = i;
+            try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{stmt.String()});
+        }
+        return self.stringBuf.items[0].toOwnedSlice();
     }
 };
 
@@ -36,6 +52,23 @@ pub const Node = union(Statements) {
 pub const Statement = struct {
     const Self = *@This();
     node: Node,
+
+    pub fn String(self: *Self) []const u8 {
+        switch (self.node) {
+            .letStatement => {
+                return "";
+            },
+            .returnStatement => {
+                return "";
+            },
+            .expressionStatement => {
+                return "";
+            },
+            else => {
+                return "";
+            },
+        }
+    }
 
     pub fn TokenLiteral(self: *Self) []const u8 {
         switch (self.node) {
@@ -74,7 +107,13 @@ pub const LetStatement = struct {
     pub fn TokenLiteral(self: *Self) []const u8 {
         return self.token.literal;
     }
+
+    pub fn string(self: *Self) []const u8 {
+        _ = self;
+        return "";
+    }
 };
+
 pub const ReturnStatement = struct {
     const Self = @This();
     token: Token,
@@ -86,4 +125,17 @@ pub const ReturnStatement = struct {
         return self.token.literal;
     }
 };
-pub const ExpressionStatement = struct {};
+pub const ExpressionStatement = struct {
+    const Self = @This();
+    token: Token,
+    expression: Expression,
+
+    pub fn statementNode(self: *Self) void {
+        _ = self;
+        return;
+    }
+
+    pub fn TokenLiteral(self: *Self) []const u8 {
+        return self.token.literal;
+    }
+};

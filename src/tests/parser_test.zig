@@ -2,11 +2,11 @@ const std = @import("std");
 const testing = std.testing;
 const mem = std.mem;
 const print = std.debug.print;
-const Token = @import("token.zig").Token;
-const Type = @import("token.zig").Type;
-const parser = @import("parser.zig");
-const lexer = @import("lexer.zig");
-const ast = @import("ast.zig");
+const Token = @import("../token.zig").Token;
+const Type = @import("../token.zig").Type;
+const parser = @import("../parser.zig");
+const lexer = @import("../lexer.zig");
+const ast = @import("../ast.zig");
 
 fn checkParserErrors(p: parser.parser) !void {
     if (p.errors.items.len != 0) std.log.err("\nparser had {any} errors \n", .{p.errors.items.len});
