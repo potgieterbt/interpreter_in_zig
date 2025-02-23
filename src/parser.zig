@@ -6,12 +6,24 @@ const ast = @import("ast.zig");
 
 pub const parser = struct {
     const Self = @This();
+
+    const ParseErr = error{
+        OutOfMemory,
+    };
+
     alloc: std.mem.Allocator,
     lex: Lexer,
     curToken: Token,
     peekToken: Token,
     program: ast.Program,
     errors: std.ArrayList([]const u8),
+
+    const prefix_fn = *const (fn (*parser) ParseErr!?ast.Expression);
+    const infix_fn = *const (fn (*parser, ast.Expression) ParseErr!?ast.Expression);
+
+    const prefixParseFns = std.StaticStringMap(prefix_fn).initComptime(.{
+        .{ @tagName(.IDENT), parser.parseIdentifier },
+    });
 
     pub fn init(alloc: std.mem.Allocator, lex: Lexer) parser {
         var p = parser{
@@ -81,7 +93,7 @@ pub const parser = struct {
         var stmt = ast.LetStatement{ .token = Token{
             .type = self.curToken.type,
             .literal = self.curToken.literal,
-        }, .name = undefined, .value = undefined };
+        }, .name = undefined, .value = undefined, .alloc = self.alloc };
 
         if (!try self.expectPeek(Type.IDENT)) {
             return null;
@@ -108,6 +120,7 @@ pub const parser = struct {
                 .literal = self.curToken.literal,
             },
             .retVal = undefined,
+            .alloc = self.alloc,
         };
 
         // TODO parse expression

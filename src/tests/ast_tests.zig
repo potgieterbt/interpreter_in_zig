@@ -28,13 +28,14 @@ pub fn StringTest() !u8 {
                 },
                 .value = "anotherVar",
             },
+            .alloc = alloc,
         } },
     };
 
     var program = ast.Program.init(alloc);
     try program.Statements.append(node1);
 
-    if (!std.mem.eql(u8, try program.String(), "let myVar = anotherVar")) {
+    if (!std.mem.eql(u8, try program.String(), "let myVar = anotherVar;")) {
         std.log.err("\nprogram.String() wrong, got={any}\n", .{program.String()});
     }
     return 1;

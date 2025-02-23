@@ -35,15 +35,21 @@ pub const Program = struct {
 
         try self.stringBuf.append(msg);
 
-        for (self.Statements.items, 0..) |stmt, i| {
-            _ = i;
-            try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{stmt.String()});
+        for (self.Statements.items, 0..) |s, i| {
+            _ = s;
+            var stmt = self.Statements.items[i];
+            switch (stmt.node) {
+                .letStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.letStatement.String()}),
+                .expressionStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.String()}),
+                .returnStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.returnStatement.String()}),
+            }
         }
         return self.stringBuf.items[0].toOwnedSlice();
     }
 };
 
 pub const Node = union(Statements) {
+    const Self = @This();
     letStatement: LetStatement,
     returnStatement: ReturnStatement,
     expressionStatement: ExpressionStatement,
@@ -52,23 +58,6 @@ pub const Node = union(Statements) {
 pub const Statement = struct {
     const Self = *@This();
     node: Node,
-
-    pub fn String(self: *Self) []const u8 {
-        switch (self.node) {
-            .letStatement => {
-                return "";
-            },
-            .returnStatement => {
-                return "";
-            },
-            .expressionStatement => {
-                return "";
-            },
-            else => {
-                return "";
-            },
-        }
-    }
 
     pub fn TokenLiteral(self: *Self) []const u8 {
         switch (self.node) {
@@ -80,8 +69,14 @@ pub const Statement = struct {
 };
 
 pub const Expression = struct {
+    const Self = @This();
     token: Token,
     value: []const u8,
+
+    pub fn String(self: *Self) ![]u8 {
+        _ = self;
+        return "";
+    }
 };
 
 pub const Identifier = struct {
@@ -101,6 +96,7 @@ pub const LetStatement = struct {
     token: Token,
     name: Identifier,
     value: Expression,
+    alloc: std.mem.Allocator,
 
     pub fn statementNode() void {}
 
@@ -108,9 +104,11 @@ pub const LetStatement = struct {
         return self.token.literal;
     }
 
-    pub fn string(self: *Self) []const u8 {
-        _ = self;
-        return "";
+    pub fn String(self: *Self) ![]u8 {
+        var msg = std.ArrayList(u8).init(self.alloc);
+
+        try std.fmt.format(msg.writer(), "{s} {s} = {s};", .{ self.TokenLiteral(), self.name.value, self.value.value });
+        return msg.toOwnedSlice();
     }
 };
 
@@ -118,17 +116,27 @@ pub const ReturnStatement = struct {
     const Self = @This();
     token: Token,
     retVal: Expression,
+    alloc: std.mem.Allocator,
 
     pub fn statementNode() void {}
 
     pub fn TokenLiteral(self: *Self) []const u8 {
         return self.token.literal;
     }
+
+    pub fn String(self: *Self) ![]u8 {
+        var msg = std.ArrayList(u8).init(self.alloc);
+
+        try std.fmt.format(msg.writer(), "{s} {s};", .{ self.TokenLiteral(), self.retVal.value });
+        return msg.toOwnedSlice();
+    }
 };
+
 pub const ExpressionStatement = struct {
     const Self = @This();
     token: Token,
     expression: Expression,
+    alloc: std.mem.Allocator,
 
     pub fn statementNode(self: *Self) void {
         _ = self;
@@ -137,5 +145,16 @@ pub const ExpressionStatement = struct {
 
     pub fn TokenLiteral(self: *Self) []const u8 {
         return self.token.literal;
+    }
+
+    pub fn String(self: *Self) ![]u8 {
+        // var msg = std.ArrayList(u8).init(self.alloc);
+        //
+        // try std.fmt.format(msg.writer(), "{s} {s} = {s}", .{ self.TokenLiteral(), self.name.value, self.value.value });
+        // return msg.toOwnedSlice();
+        if (self.expression.token.type != .ILLEGAL) {
+            return self.expression.String();
+        }
+        return "";
     }
 };
