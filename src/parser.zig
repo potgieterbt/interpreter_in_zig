@@ -18,6 +18,16 @@ pub const parser = struct {
     program: ast.Program,
     errors: std.ArrayList([]const u8),
 
+    const Precedence = enum {
+        LOWEST,
+        EQUALS,
+        LESSGREATER,
+        SUM,
+        PRODUCT,
+        PREFIX,
+        CALL,
+    };
+
     const prefix_fn = *const (fn (*parser) ParseErr!?ast.Expression);
     const infix_fn = *const (fn (*parser, ast.Expression) ParseErr!?ast.Expression);
 
@@ -25,7 +35,9 @@ pub const parser = struct {
         .{ @tagName(.IDENT), parser.parseIdentifier },
     });
 
-    pub fn init(alloc: std.mem.Allocator, lex: Lexer) parser {
+    const infixParseFns = std.StaticStringMap(infix_fn).initComptime(.{});
+
+    pub fn init(alloc: std.mem.Allocator, lex: Lexer) !parser {
         var p = parser{
             .alloc = alloc,
             .curToken = undefined,
@@ -34,6 +46,7 @@ pub const parser = struct {
             .program = ast.Program.init(alloc),
             .errors = std.ArrayList([]const u8).init(alloc),
         };
+
         p.NextToken();
         p.NextToken();
         return p;
@@ -85,7 +98,12 @@ pub const parser = struct {
             //     }
             //     return null;
             // },
-            else => return null,
+            else => {
+                if (try self.parseExpressionStatement()) |expressionStatement| {
+                    return ast.Statement{ .node = ast.Node{ .expressionStatement = expressionStatement } };
+                }
+                return null;
+            },
         }
     }
 
@@ -129,6 +147,41 @@ pub const parser = struct {
         }
 
         return stmt;
+    }
+
+    pub fn parseExpressionStatement(self: *Self) !?ast.ExpressionStatement {
+        const stmt = ast.ExpressionStatement{
+            .alloc = self.alloc,
+            .token = self.curToken,
+            .expression = (try self.parseExpression(.LOWEST)).?,
+        };
+
+        if (self.peekTokenIs(Type.SEMICOLON)) {
+            self.NextToken();
+        }
+
+        return stmt;
+    }
+
+    pub fn parseExpression(self: *Self, prec: Precedence) !?ast.Expression {
+        _ = prec;
+        const prefix_maybe = parser.prefixParseFns.get(@tagName(self.curToken.type));
+        if (prefix_maybe == null) {
+            return null;
+        }
+        const prefix = prefix_maybe.?;
+
+        const left_expr = try prefix(self);
+        // while (true) {}
+
+        return left_expr;
+    }
+
+    pub fn parseIdentifier(self: *parser) error{OutOfMemory}!?ast.Expression {
+        return ast.Expression{
+            .token = self.curToken,
+            .value = self.curToken.literal,
+        };
     }
 
     pub fn peekTokenIs(self: *Self, t: Type) bool {

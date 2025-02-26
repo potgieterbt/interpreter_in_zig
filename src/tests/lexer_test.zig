@@ -144,7 +144,6 @@ pub fn TestNextTokenEx2() !u8 {
     for (tests) |tt| {
         const tok = try lex.NextToken();
 
-        print("{any}\n", .{tok});
         try testing.expectEqualDeep(tt.type, tok.type);
         // try testing.expectEqual(tok.literal, tt.literal);
         // user mem.eql
