@@ -29,10 +29,10 @@ pub fn TestIntegerExpression() !u8 {
 
     const stmt = program.Statements.items[0].node.expressionStatement;
 
-    const ident = stmt.expression;
+    const int = stmt.expression.integer_literal;
 
-    try testing.expect(std.mem.eql(u8, ident.value, @as(i64, 5)) == true);
-    try testing.expect(std.mem.eql(u8, ident.token.literal, "5") == true);
+    try testing.expect(int.value == @as(i64, 5));
+    try testing.expect(std.mem.eql(u8, int.token.literal, "5") == true);
     return 1;
 }
 
@@ -58,7 +58,7 @@ pub fn TestIdentifierExpression() !u8 {
 
     const stmt = program.Statements.items[0].node.expressionStatement;
 
-    const ident = stmt.expression;
+    const ident = stmt.expression.identifier;
 
     try testing.expect(std.mem.eql(u8, ident.value, "foobar") == true);
     try testing.expect(std.mem.eql(u8, ident.token.literal, "foobar") == true);

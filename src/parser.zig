@@ -9,6 +9,8 @@ pub const parser = struct {
 
     const ParseErr = error{
         OutOfMemory,
+        Overflow,
+        InvalidCharacter,
     };
 
     alloc: std.mem.Allocator,
@@ -33,6 +35,7 @@ pub const parser = struct {
 
     const prefixParseFns = std.StaticStringMap(prefix_fn).initComptime(.{
         .{ @tagName(.IDENT), parser.parseIdentifier },
+        .{ @tagName(.INT), parser.parseInteger },
     });
 
     const infixParseFns = std.StaticStringMap(infix_fn).initComptime(.{});
@@ -100,7 +103,7 @@ pub const parser = struct {
             // },
             else => {
                 if (try self.parseExpressionStatement()) |expressionStatement| {
-                    return ast.Statement{ .node = ast.Node{ .expressionStatement = expressionStatement } };
+                    return ast.Statement{ .node = .{ .expressionStatement = expressionStatement } };
                 }
                 return null;
             },
@@ -178,9 +181,18 @@ pub const parser = struct {
     }
 
     pub fn parseIdentifier(self: *parser) error{OutOfMemory}!?ast.Expression {
-        return ast.Expression{
+        return ast.Expression{ .identifier = .{
             .token = self.curToken,
             .value = self.curToken.literal,
+        } };
+    }
+
+    pub fn parseInteger(self: *parser) error{ OutOfMemory, Overflow, InvalidCharacter }!?ast.Expression {
+        return ast.Expression{
+            .integer_literal = .{
+                .token = self.curToken,
+                .value = try std.fmt.parseInt(i64, self.curToken.literal, 10),
+            },
         };
     }
 

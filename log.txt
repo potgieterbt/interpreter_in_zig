@@ -1,0 +1,13 @@
+test
++- run test
+   +- zig test Debug native 1 errors
+src/tests/parser_test.zig:37:26: error: no field or member function named 'ParseProgram' in '@typeInfo(@typeInfo(@TypeOf(parser.parser.init)).Fn.return_type.?).ErrorUnion.error_set!parser.parser'
+src/tests/parser_test.zig:37:26: note: consider using 'try', 'catch', or 'if'
+error: the following command failed with 1 compilation errors:
+/usr/bin/zig test -freference-trace=256 -ODebug -Mroot=/home/user/projects/zig_interpreter/src/root.zig --cache-dir /home/user/projects/zig_interpreter/.zig-cache --global-cache-dir /home/user/.cache/zig --name test --listen=- 
+Build Summary: 2/5 steps succeeded; 1 failed (disable with --summary none)
+test transitive failure
++- run test transitive failure
+   +- zig test Debug native 1 errors
+error: the following build command failed with exit code 1:
+/home/user/projects/zig_interpreter/.zig-cache/o/2f048a592e3853e4f84aba889b5e97ee/build /usr/bin/zig /home/user/projects/zig_interpreter /home/user/projects/zig_interpreter/.zig-cache /home/user/.cache/zig --seed 0x7a1a3838 -Zfb26618cbda1d2ff test -freference-trace

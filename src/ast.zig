@@ -40,7 +40,13 @@ pub const Program = struct {
             var stmt = self.Statements.items[i];
             switch (stmt.node) {
                 .letStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.letStatement.String()}),
-                .expressionStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.String()}),
+                .expressionStatement => {
+                    try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.String()});
+                    switch (stmt.node.expressionStatement.expression) {
+                        .identifier => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.expression.identifier.String()}),
+                        .integer_literal => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.expression.integer_literal.String()}),
+                    }
+                },
                 .returnStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.returnStatement.String()}),
             }
         }
@@ -53,6 +59,28 @@ pub const Node = union(Statements) {
     letStatement: LetStatement,
     returnStatement: ReturnStatement,
     expressionStatement: ExpressionStatement,
+};
+
+pub const ExpressionStatement = struct {
+    const Self = @This();
+    alloc: std.mem.Allocator,
+    token: Token,
+    expression: Expression,
+
+    pub fn String(self: *Self) ![]u8 {
+        _ = self;
+        return "";
+    }
+};
+
+pub const IntegerLiteral = struct {
+    const Self = @This();
+    token: Token,
+    value: i64,
+
+    pub fn String(self: *Self) !i64 {
+        return self.token.literal;
+    }
 };
 
 pub const Statement = struct {
@@ -68,15 +96,9 @@ pub const Statement = struct {
     }
 };
 
-pub const Expression = struct {
-    const Self = @This();
-    token: Token,
-    value: []const u8,
-
-    pub fn String(self: *Self) ![]u8 {
-        _ = self;
-        return "";
-    }
+pub const Expression = union(enum) {
+    identifier: Identifier,
+    integer_literal: IntegerLiteral,
 };
 
 pub const Identifier = struct {
@@ -88,6 +110,10 @@ pub const Identifier = struct {
 
     pub fn TokenLiteral(self: *Self) []const u8 {
         return self.token.literal;
+    }
+
+    pub fn String(self: *Self) ![]u8 {
+        return self.value;
     }
 };
 
@@ -132,29 +158,29 @@ pub const ReturnStatement = struct {
     }
 };
 
-pub const ExpressionStatement = struct {
-    const Self = @This();
-    token: Token,
-    expression: Expression,
-    alloc: std.mem.Allocator,
-
-    pub fn statementNode(self: *Self) void {
-        _ = self;
-        return;
-    }
-
-    pub fn TokenLiteral(self: *Self) []const u8 {
-        return self.token.literal;
-    }
-
-    pub fn String(self: *Self) ![]u8 {
-        // var msg = std.ArrayList(u8).init(self.alloc);
-        //
-        // try std.fmt.format(msg.writer(), "{s} {s} = {s}", .{ self.TokenLiteral(), self.name.value, self.value.value });
-        // return msg.toOwnedSlice();
-        if (self.expression.token.type != .ILLEGAL) {
-            return self.expression.String();
-        }
-        return "";
-    }
-};
+// pub const ExpressionStatement = struct {
+//     const Self = @This();
+//     token: Token,
+//     expression: Expression,
+//     alloc: std.mem.Allocator,
+//
+//     pub fn statementNode(self: *Self) void {
+//         _ = self;
+//         return;
+//     }
+//
+//     pub fn TokenLiteral(self: *Self) []const u8 {
+//         return self.token.literal;
+//     }
+//
+//     pub fn String(self: *Self) ![]u8 {
+//         // var msg = std.ArrayList(u8).init(self.alloc);
+//         //
+//         // try std.fmt.format(msg.writer(), "{s} {s} = {s}", .{ self.TokenLiteral(), self.name.value, self.value.value });
+//         // return msg.toOwnedSlice();
+//         if (self.expression.String()) {
+//             return self.expression.String();
+//         }
+//         return "";
+//     }
+// };

@@ -32,7 +32,7 @@ pub fn TestLetStatements() !u8 {
     ;
 
     const l = lexer.Lexer.init(input);
-    var p = parser.parser.init(alloc, l);
+    var p = try parser.parser.init(alloc, l);
 
     const program = try p.ParseProgram();
 
@@ -53,6 +53,8 @@ pub fn TestLetStatements() !u8 {
         Token{ .type = .LET, .literal = "y" },
         Token{ .type = .LET, .literal = "foobar" },
     };
+
+    print("{any}", .{program.Statements.items[0]});
 
     for (tests, 0..) |tt, i| {
         const stmt = program.Statements.items[i];
