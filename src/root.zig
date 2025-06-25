@@ -25,6 +25,10 @@ const express_test = @import("tests/expression_test.zig");
 //     try testing.expect(try ast_test.StringTest() == 1);
 // }
 
+test "PrefixExpressionTest" {
+    try testing.expect(try express_test.TestPrefixExpression() == 1);
+}
+
 test "IdentifierExpressionTest" {
     try testing.expect(try express_test.TestIdentifierExpression() == 1);
 }

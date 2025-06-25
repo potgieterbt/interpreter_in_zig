@@ -36,6 +36,8 @@ pub const parser = struct {
     const prefixParseFns = std.StaticStringMap(prefix_fn).initComptime(.{
         .{ @tagName(.IDENT), parser.parseIdentifier },
         .{ @tagName(.INT), parser.parseInteger },
+        .{ @tagName(.BANG), parser.parsePrefixExpression },
+        .{ @tagName(.MINUS), parser.parsePrefixExpression },
     });
 
     const infixParseFns = std.StaticStringMap(infix_fn).initComptime(.{});
@@ -60,7 +62,6 @@ pub const parser = struct {
     }
 
     pub fn peekError(self: *Self, t: Type) !void {
-        // const msg = std.fmt.format("expected next token to be {s}, got {s} indtead\n", .{ t, self.peekToken.type });
         const msg = try std.fmt.allocPrint(self.alloc, "expected next token to be {any}, got {any} indtead\n", .{ t, self.peekToken.type });
         try self.errors.append(msg);
     }
@@ -156,7 +157,7 @@ pub const parser = struct {
         const stmt = ast.ExpressionStatement{
             .alloc = self.alloc,
             .token = self.curToken,
-            .expression = (try self.parseExpression(.LOWEST)).?,
+            .expression = (try self.parseExpression(.LOWEST)).?.*,
         };
 
         if (self.peekTokenIs(Type.SEMICOLON)) {
@@ -166,10 +167,17 @@ pub const parser = struct {
         return stmt;
     }
 
-    pub fn parseExpression(self: *Self, prec: Precedence) !?ast.Expression {
+    pub fn noPrefixFnError(self: *Self, tok: Token) !void {
+        const msg = try std.fmt.allocPrint(self.alloc, "no prefix parse function for '{s}' found", .{@tagName(tok.type)});
+        std.debug.print("no prefix parse function for '{s}' found", .{@tagName(tok.type)});
+        try self.errors.append(msg);
+    }
+
+    pub fn parseExpression(self: *Self, prec: Precedence) !?*const ast.Expression {
         _ = prec;
         const prefix_maybe = parser.prefixParseFns.get(@tagName(self.curToken.type));
         if (prefix_maybe == null) {
+            try self.noPrefixFnError(self.curToken);
             return null;
         }
         const prefix = prefix_maybe.?;
@@ -177,7 +185,7 @@ pub const parser = struct {
         const left_expr = try prefix(self);
         // while (true) {}
 
-        return left_expr;
+        return &left_expr.?;
     }
 
     pub fn parseIdentifier(self: *parser) error{OutOfMemory}!?ast.Expression {
@@ -194,6 +202,21 @@ pub const parser = struct {
                 .value = try std.fmt.parseInt(i64, self.curToken.literal, 10),
             },
         };
+    }
+
+    pub fn parsePrefixExpression(self: *parser) error{ OutOfMemory, Overflow, InvalidCharacter }!?ast.Expression {
+        var exp = ast.Expression{
+            .prefix_expression = .{
+                .operator = self.curToken.literal,
+                .token = self.curToken,
+                .right = undefined,
+            },
+        };
+
+        self.NextToken();
+
+        exp.prefix_expression.right = (try self.parseExpression(.PREFIX)).?;
+        return exp;
     }
 
     pub fn peekTokenIs(self: *Self, t: Type) bool {

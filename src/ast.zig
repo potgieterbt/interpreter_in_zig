@@ -45,6 +45,7 @@ pub const Program = struct {
                     switch (stmt.node.expressionStatement.expression) {
                         .identifier => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.expression.identifier.String()}),
                         .integer_literal => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.expression.integer_literal.String()}),
+                        .prefix_expression => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.expressionStatement.expression.prefix_expression.String()}),
                     }
                 },
                 .returnStatement => try std.fmt.format(self.stringBuf.items[self.stringBuf.items.len - 1].writer(), "{s}", .{try stmt.node.returnStatement.String()}),
@@ -83,6 +84,32 @@ pub const IntegerLiteral = struct {
     }
 };
 
+const PrefixExpression = struct {
+    const Self = @This();
+    token: Token,
+    operator: []const u8,
+    right: *const Expression,
+
+    pub fn expressionNode() void {}
+
+    pub fn TokenLiteral(self: *Self) []const u8 {
+        return self.token.literal;
+    }
+
+    pub fn String(self: *Self) []const u8 {
+        const exp = switch (self.right) {
+            .identifier => self.right.*.identifier,
+            .integer_literal => self.right.*.integer_literal,
+            .prefix_expression => self.right.*.prefix_expression,
+        };
+
+        var msg = std.ArrayList(u8).init(self.alloc);
+
+        try std.fmt.format(msg.writer(), "({s}{s})", .{ self.operator, exp.String() });
+        return msg.toOwnedSlice();
+    }
+};
+
 pub const Statement = struct {
     const Self = *@This();
     node: Node,
@@ -92,6 +119,12 @@ pub const Statement = struct {
             .letStatement => |content| {
                 return content.token.literal;
             },
+            .returnStatement => |content| {
+                return content.token.literal;
+            },
+            .expressionStatement => |content| {
+                return content.token.literal;
+            },
         }
     }
 };
@@ -99,6 +132,7 @@ pub const Statement = struct {
 pub const Expression = union(enum) {
     identifier: Identifier,
     integer_literal: IntegerLiteral,
+    prefix_expression: PrefixExpression,
 };
 
 pub const Identifier = struct {
@@ -112,7 +146,7 @@ pub const Identifier = struct {
         return self.token.literal;
     }
 
-    pub fn String(self: *Self) ![]u8 {
+    pub fn String(self: *Self) ![]const u8 {
         return self.value;
     }
 };

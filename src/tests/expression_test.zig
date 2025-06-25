@@ -7,6 +7,46 @@ const Type = @import("../token.zig").Type;
 const parser = @import("../parser.zig");
 const lexer = @import("../lexer.zig");
 
+pub fn TestPrefixExpression() !u8 {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const alloc = arena.allocator();
+
+    const inputs = [_][]const u8{ "!5;", "-15;" };
+    const expected_operators = [_][]const u8{ "!", "-" };
+    const expected_vals = [_]i64{ 5, 15 };
+
+    for (inputs, expected_operators, expected_vals) |input, expected_operator, expected_val| {
+        const l = lexer.Lexer.init(input);
+        var p = try parser.parser.init(alloc, l);
+
+        const program = try p.ParseProgram();
+
+        try checkParserErrors(p);
+
+        if (program.Statements.items.len != 1) {
+            print("Program Statements is too small to incluce expression: {any}\n", .{program.Statements.items});
+            try testing.expectEqual(1, program.Statements.items.len);
+        }
+
+        const stmt = program.Statements.items[0].node.expressionStatement;
+
+        const exp = stmt.expression.prefix_expression;
+        const right = switch (exp.right.*) {
+            .integer_literal => *exp.right.*.integer_literal,
+            .identifier => *exp.right.*.identifier,
+            .prefix_expression => *exp.right.*.prefix_expression,
+        };
+
+        print("{any}, {any}", .{ exp.operator, expected_operator });
+        print("{any}, {any}", .{ right, expected_val });
+        try testing.expect(std.mem.eql(u8, exp.operator, expected_operator) == true);
+        try testing.expect(right == expected_val);
+    }
+    return 1;
+}
+
 pub fn TestIntegerExpression() !u8 {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
